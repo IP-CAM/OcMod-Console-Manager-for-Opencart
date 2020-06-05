@@ -133,6 +133,7 @@ class OcMod
         }
 
         $this->ocmod_dir = getcwd().'/ocmod/';
+        $this->oc_dir = getcwd().'/';
 
         if(isset($this->first_run))
         {
@@ -566,7 +567,415 @@ class OcMod
             print "Required: import [FILE]".PHP_EOL;
             exit(2);
         }
+    }
 
+    function write_model($name)
+    {
+        // eg. admin/tool/test
+        $name = trim($name);
+		$name = trim($name,'/');
+
+		$routes = explode('/', $name);
+
+		if($routes[0] == 'catalog')
+		{
+            $application = 'catalog';
+            unset($routes[0]);
+		}
+		else if($routes[0] == 'admin')
+		{
+            $application = 'admin';
+            unset($routes[0]);
+		}
+		else
+		{
+			print 'ERROR: application not specified (eg.: admin or catalog): '.PHP_EOL;
+			exit(2);
+        }
+        $generate_file = $this->oc_dir.''.$application."/model/".implode('/',$routes).".php";
+        $class_name = "Model".implode("",array_map('ucfirst',$routes));
+        $path = implode("/",$routes);
+
+        $generate_content = '<?php
+class '.$class_name.' extends Model {
+
+}';
+        if($this->save_file($generate_file,$generate_content) == false)
+        {
+            print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+            exit(2);
+        }
+    }
+
+    function write_language($name)
+    {
+        // eg. admin/tool/test
+        $name = trim($name);
+		$name = trim($name,'/');
+
+		$routes = explode('/', $name);
+
+		if($routes[0] == 'catalog')
+		{
+            $application = 'catalog';
+            unset($routes[0]);
+		}
+		else if($routes[0] == 'admin')
+		{
+            $application = 'admin';
+            unset($routes[0]);
+		}
+		else
+		{
+			print 'ERROR: application not specified (eg.: admin or catalog): '.PHP_EOL;
+			exit(2);
+        }
+
+        $installed_langs=glob($this->oc_dir. $application. '/language/*');
+
+        foreach($installed_langs as $lang_dirs)
+        {
+
+            $generate_file = $lang_dirs."/".implode('/',$routes).".php";
+            $path = implode("/",$routes);
+
+            $generate_content = '<?php
+// Heading Title
+$_[\'heading_title\']    = \''.implode(" ",array_map('ucfirst',$routes)).'\';
+';
+            if($this->save_file($generate_file,$generate_content) == false)
+            {
+                print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+                exit(2);
+            }
+        }
+    }
+
+    function write_template($name)
+    {
+        // eg. admin/tool/test
+        $name = trim($name);
+		$name = trim($name,'/');
+
+		$routes = explode('/', $name);
+
+		if($routes[0] == 'catalog')
+		{
+            $application = 'catalog';
+            unset($routes[0]);
+		}
+		else if($routes[0] == 'admin')
+		{
+            $application = 'admin';
+            unset($routes[0]);
+		}
+		else
+		{
+			print 'ERROR: application not specified (eg.: admin or catalog): '.PHP_EOL;
+			exit(2);
+        }
+        
+        if($application == 'admin')
+        {
+            $generate_file = $application."/view/template/".implode('/',$routes).".twig";
+            $generate_content = '{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="pull-right">
+            </div>
+            <h1>{{ heading_title }}</h1>
+            <ul class="breadcrumb">
+                {% for breadcrumb in breadcrumbs %}
+                <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        {% if error_warning %}
+        <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        {% endif %}
+        {% if success %}
+        <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+        {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title"></h3>
+            </div>
+            <div class="panel-body">
+
+            </div>
+        </div>
+    </div>
+</div>
+{{ footer }}';
+            // write Controller file
+            if($this->save_file($generate_file,$generate_content) == false)
+            {
+			    print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+			    exit(2);
+            }
+        }
+            
+        if($application == 'catalog')
+        {
+            $generate_file = $application."/view/theme/default/template/".implode('/',$routes).".twig";
+            $div_id = implode("-",array_map('ucfirst',$routes));
+		    $generate_content = '{{ header }}
+<div id="'.$div_id.'" class="container">
+<ul class="breadcrumb">
+    {% for breadcrumb in breadcrumbs %}
+    <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+    {% endfor %}
+</ul>
+<div class="row">{{ column_left }}
+    {% if column_left and column_right %}
+    {% set class = \'col-sm-6\' %}
+    {% elseif column_left or column_right %}
+    {% set class = \'col-sm-9\' %}
+    {% else %}
+    {% set class = \'col-sm-12\' %}
+    {% endif %}
+    <div id="content" class="{{ class }}">{{ content_top }}
+        <h1>{{ heading_title }}</h1>
+        {{ content_bottom }}</div>
+    {{ column_right }}</div>
+</div>
+{{ footer }}';
+            // write file
+            if($this->save_file($generate_file,$generate_content) == false)
+            {
+			    print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+			    exit(2);
+            }
+        }
+    }
+
+    function write_controller($name=false)
+    {
+        // eg. admin/tool/test
+        $name = trim($name);
+		$name = trim($name,'/');
+
+		$routes = explode('/', $name);
+
+		if($routes[0] == 'catalog')
+		{
+            $application = 'catalog';
+            unset($routes[0]);
+		}
+		else if($routes[0] == 'admin')
+		{
+            $application = 'admin';
+            unset($routes[0]);
+		}
+		else
+		{
+			print 'ERROR: application not specified (eg.: admin or catalog): '.PHP_EOL;
+			exit(2);
+        }
+        
+        $class = 'controller';
+
+        if($application == 'admin')
+		{
+            $generate_file = $this->oc_dir.''.$application."/controller/".implode('/',$routes).".php";
+            $controller = "Controller".implode("",array_map('ucfirst',$routes));
+            $path = implode("/",$routes);
+            $extension_add = "";
+
+            if(in_array('extension', $routes))
+            {
+                $extension_add = 'public function install() {
+
+    $this->load->model(\'user/user_group\');
+
+    $this->model_user_user_group->addPermission($this->user->getId(), \'access\', \''.implode('/',$routes).'\');
+    $this->model_user_user_group->addPermission($this->user->getId(), \'modify\', \''.implode('/',$routes).'\');
+}
+
+public function uninstall() {
+
+}
+';
+            }
+
+            $generate_content = '<?php
+class '.$controller.' extends Controller {
+    private $error = array();
+
+    public function index() {
+        // Loading language file
+        $this->load->language(\''.$path.'\');
+
+        $this->document->setTitle($this->language->get(\'heading_title\'));
+
+        if (isset($this->session->data[\'error\'])) {
+            $data[\'error_warning\'] = $this->session->data[\'error\'];
+
+            unset($this->session->data[\'error\']);
+        } elseif (isset($this->error[\'warning\'])) {
+            $data[\'error_warning\'] = $this->error[\'warning\'];
+        } else {
+            $data[\'error_warning\'] = \'\';
+        }
+
+        if (isset($this->session->data[\'success\'])) {
+            $data[\'success\'] = $this->session->data[\'success\'];
+
+            unset($this->session->data[\'success\']);
+        } else {
+            $data[\'success\'] = \'\';
+        }
+
+        $data[\'breadcrumbs\'] = array();
+
+        $data[\'breadcrumbs\'][] = array(
+            \'text\' => $this->language->get(\'text_home\'),
+            \'href\' => $this->url->link(\'common/dashboard\', \'user_token=\' . $this->session->data[\'user_token\'], true)
+        );
+
+        $data[\'breadcrumbs\'][] = array(
+            \'text\' => $this->language->get(\'heading_title\'),
+            \'href\' => $this->url->link(\''.$path.'\', \'user_token=\' . $this->session->data[\'user_token\'], true)
+        );
+
+        $data[\'header\'] = $this->load->controller(\'common/header\');
+        $data[\'column_left\'] = $this->load->controller(\'common/column_left\');
+        $data[\'footer\'] = $this->load->controller(\'common/footer\');
+
+        $this->response->setOutput($this->load->view(\''.$path.'\', $data));
+    }'.$extension_add.'
+}';
+
+            // write Controller file
+            if($this->save_file($generate_file,$generate_content) == false)
+            {
+			    print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+			    exit(2);
+            }
+        }
+        if($application == 'catalog')
+		{
+            $generate_file = $this->oc_dir.''.$application."/controller/".implode('/',$routes).".php";
+            $controller = "Controller".implode("",array_map('ucfirst',$routes));
+            $path = implode("/",$routes);
+            $generate_content = '<?php
+class '.$controller.' extends Controller {
+    public function index() {
+        $this->load->language(\''.$path.'\');
+
+        $this->load->model(\''.$path.'\');
+
+        $data[\'breadcrumbs\'] = array();
+
+        $data[\'breadcrumbs\'][] = array(
+            \'text\' => $this->language->get(\'text_home\'),
+            \'href\' => $this->url->link(\'common/home\')
+        );
+
+        $this->document->setTitle($this->language->get(\'heading_title\'));
+
+        $data[\'breadcrumbs\'][] = array(
+            \'text\' => $this->language->get(\'heading_title\'),
+            \'href\' => $this->url->link(\'common/home\')
+        );
+
+        $data[\'continue\'] = $this->url->link(\'common/home\');
+
+        $data[\'column_left\'] = $this->load->controller(\'common/column_left\');
+        $data[\'column_right\'] = $this->load->controller(\'common/column_right\');
+        $data[\'content_top\'] = $this->load->controller(\'common/content_top\');
+        $data[\'content_bottom\'] = $this->load->controller(\'common/content_bottom\');
+        $data[\'footer\'] = $this->load->controller(\'common/footer\');
+        $data[\'header\'] = $this->load->controller(\'common/header\');
+
+        $this->response->setOutput($this->load->view(\''.$path.'\', $data));
+    }
+}';
+            // write Controller file
+            if($this->save_file($generate_file,$generate_content) == false)
+            {
+			    print 'ERROR: write failed: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+			    exit(2);
+            }  
+        }
+    }
+
+    function save_file($generate_file,$generate_content)
+    {
+        if(is_file($generate_file))
+        {  
+            print 'file already exists: '.str_replace($this->oc_dir, "", $generate_file).PHP_EOL;
+            exit(2);
+        }
+        $dir = dirname($generate_file);
+        if(!is_dir($dir))
+        {
+            mkdir($dir,0755, true);
+        }
+        $this->new_files_add[] = $generate_file;
+        return file_put_contents($generate_file,$generate_content);
+    }
+
+    function extension()
+    {
+        if(isset($this->params[2]))
+        {
+            $code = @$this->params[2];
+            $this->code_load($code);
+        }
+        else
+        {
+            print "Required: extension [CODE] [NAME]".PHP_EOL;
+            exit(2);
+        } 
+
+        if(isset($this->params[3]))
+        {
+            $name = @$this->params[3];
+            if($name)
+            {
+                $this->write_controller('admin/extension/'.$name);
+                $this->write_controller('catalog/extension/'.$name);
+
+                $this->write_model('admin/extension/'.$name);
+                $this->write_model('catalog/extension/'.$name);
+
+                $this->write_language('admin/extension/'.$name);
+                $this->write_language('catalog/extension/'.$name);
+
+                $this->write_template('admin/extension/'.$name);
+                $this->write_template('catalog/extension/'.$name);
+
+                if($this->new_files_add)
+                {
+                    foreach($this->new_files_add as $filepath)
+                    {
+                        $this->json_data['sources'][] = str_replace( getcwd().'/', '',$filepath);
+                    }
+
+                    $this->json_data['sources'] = array_unique($this->json_data['sources']);
+    
+                    $write = file_put_contents($this->ocmod_dir.$this->json_data['code'].".json", json_encode($this->json_data, JSON_PRETTY_PRINT));
+                    if($write == false)
+                    {
+                        print 'json file write error'.PHP_EOL;
+                        exit(2);
+                    }
+                }
+            }
+        }
+        else
+        {
+            print "Required: extension [NAME] (eg: extension/module/test)".PHP_EOL;
+            exit(2);
+        }
     }
 }
 
@@ -595,6 +1004,7 @@ if(!isset($app->params[1]) || $app->is_param('-v') || $app->is_param('--version'
 if(method_exists($app, $app->params[1]))
 {
     $run = $app->params[1];
+    $run = str_replace('-','_',$run);
     $app->{$run}();
 }
 else
