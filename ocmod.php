@@ -381,7 +381,7 @@ class OcMod
             exit(2);   
         }
 
-        $zipname = $this->ocmod_dir.$code.'.ocmod.zip';
+        $zipname = $this->ocmod_dir.$code.'-v'.$this->json_data['version'].'.ocmod.zip';
         
         @unlink($zipname);
 
