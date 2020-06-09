@@ -594,6 +594,7 @@ class OcMod
         }
         $generate_file = $this->oc_dir.''.$application."/model/".implode('/',$routes).".php";
         $class_name = "Model".implode("",array_map('ucfirst',$routes));
+        $class_name = str_replace('_', '', $class_name);
         $path = implode("/",$routes);
 
         $generate_content = '<?php
@@ -786,6 +787,7 @@ $_[\'heading_title\']    = \''.implode(" ",array_map('ucfirst',$routes)).'\';
 		{
             $generate_file = $this->oc_dir.''.$application."/controller/".implode('/',$routes).".php";
             $controller = "Controller".implode("",array_map('ucfirst',$routes));
+            $controller = str_replace('_', '',$controller); 
             $path = implode("/",$routes);
             $extension_add = "";
 
@@ -941,17 +943,22 @@ class '.$controller.' extends Controller {
             $name = @$this->params[3];
             if($name)
             {
-                $this->write_controller('admin/extension/'.$name);
-                $this->write_controller('catalog/extension/'.$name);
+                if(!$this->is_param('--no-admin'))
+                {
+                    $this->write_controller('admin/extension/'.$name);
+                    $this->write_model('admin/extension/'.$name);
+                    $this->write_language('admin/extension/'.$name);
+                    $this->write_template('admin/extension/'.$name);
+                }
 
-                $this->write_model('admin/extension/'.$name);
-                $this->write_model('catalog/extension/'.$name);
+                if(!$this->is_param('--no-catalog'))
+                {
+                    $this->write_controller('catalog/extension/'.$name);
+                    $this->write_model('catalog/extension/'.$name);  
+                    $this->write_language('catalog/extension/'.$name);
+                    $this->write_template('catalog/extension/'.$name);
+                }
 
-                $this->write_language('admin/extension/'.$name);
-                $this->write_language('catalog/extension/'.$name);
-
-                $this->write_template('admin/extension/'.$name);
-                $this->write_template('catalog/extension/'.$name);
 
                 if($this->new_files_add)
                 {
@@ -973,9 +980,41 @@ class '.$controller.' extends Controller {
         }
         else
         {
-            print "Required: extension [NAME] (eg: extension/module/test)".PHP_EOL;
+            print "Required: extension [NAME] (eg: module/test)".PHP_EOL;
             exit(2);
         }
+    }
+
+    function install(){
+        
+        if(isset($this->params[2]))
+        {
+            $code = @$this->params[2];
+            $this->code_load($code);
+        }
+        else
+        {
+            print "Required: install [CODE]".PHP_EOL;
+            exit(2);
+        }
+        // add permission to ADMIN
+        include($this->oc_dir.'config.php');
+
+        $mysqli = new mysqli(DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE);
+        $mysqli->query("DELETE " . DB_PREFIX . "modification WHERE code = '" . $code . "'");
+
+        $mysqli->query("INSERT INTO " . DB_PREFIX . "modification SET code = '" . $code . "', 
+            `extension_install_id`='0',
+            `date_added`='".date('Y-m-d H:i:s')."',
+            `name`='".$this->json_data['name']."',
+            `author`='".$this->json_data['author']."',
+            `version`='".$this->json_data['version']."',
+            `link`='".$mysqli->real_escape_string($this->json_data['link'])."',
+            `xml`='".$mysqli->real_escape_string(file_get_contents($this->ocmod_dir.$code.".xml"))."',
+            `status`=1
+             ");
+        print_r($mysqli);
+        $mysqli->close();
     }
 }
 
