@@ -1,2 +1,2 @@
 # ocmod-cli
-OpenCart OCmod console managger
+OpenCart OCmod console Manager
